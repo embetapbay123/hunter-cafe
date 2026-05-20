@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../cafes/models/cafe.dart';
+import '../cafes/models/collection.dart';
 import '../cafes/viewmodels/cafe_viewmodel.dart';
 import '../screens/cafe_detail_screen.dart';
 import '../screens/map_screen.dart';
@@ -105,12 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final pages = [
           _DiscoverPage(searchController: _searchController),
           _SearchPage(searchController: _searchController),
-          const _ComingSoonPage(
-            title: 'Saved list se toi o branch sau',
-            subtitle:
-                'Tam thoi ban van co the bam tim o Home hoac Search de danh dau nhanh cac quan can luu.',
-            icon: Icons.favorite_rounded,
-          ),
+          const _SavedPage(),
           _ProfilePreview(onSignedOut: _handleSignOut),
         ];
 
@@ -422,6 +418,83 @@ class _SearchPage extends StatelessWidget {
   }
 }
 
+class _SavedPage extends StatelessWidget {
+  const _SavedPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<CafeViewModel>(
+      builder: (context, cafeViewModel, _) {
+        final savedCafes = cafeViewModel.favouriteCafes;
+        return SafeArea(
+          bottom: false,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 120),
+            children: [
+              const _PageHeading(
+                eyebrow: 'SAVED CAFES',
+                title: 'Danh sach quan da luu da san sang.',
+                subtitle:
+                    'Branch nay tap trung vao saved list de truy cap nhanh cac quan yeu thich.',
+              ),
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: CafeColors.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: CafeColors.dark.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.favorite_rounded,
+                      color: CafeColors.heart,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '${savedCafes.length} quan da duoc danh dau luu.',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              const _SectionLabel(
+                title: 'Truy cap nhanh',
+                subtitle: 'Mo chi tiet hoac bo luu truc tiep tu danh sach nay',
+              ),
+              const SizedBox(height: 12),
+              if (savedCafes.isEmpty)
+                const _EmptyState(
+                  title: 'Ban chua luu quan nao',
+                  subtitle:
+                      'Bam tim o Home, Search, hoac Detail de dua quan vao danh sach Saved.',
+                )
+              else
+                ...savedCafes.map(
+                  (cafe) => Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: _CafeCard(
+                      cafe: cafe,
+                      onOpenDetail: () => _openCafeDetailScreen(context, cafe.id),
+                      onFavouriteToggle: () =>
+                          cafeViewModel.toggleFavourite(cafe.id),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _SearchSummaryCard extends StatelessWidget {
   const _SearchSummaryCard({
     required this.resultCount,
@@ -560,7 +633,7 @@ class _ProfilePreview extends StatelessWidget {
                   eyebrow: 'PROFILE PREVIEW',
                   title: 'Profile shell da san sang.',
                   subtitle:
-                      'Thong tin chi tiet, collections va review history se duoc tach thanh branch rieng.',
+                      'Collections da co danh sach de mo nhanh. Profile chi tiet va review history se tiep tuc mo rong o branch sau.',
                 ),
                 const SizedBox(height: 20),
                 Container(
@@ -605,6 +678,33 @@ class _ProfilePreview extends StatelessWidget {
                     ],
                   ),
                 ),
+                const SizedBox(height: 18),
+                const _SectionLabel(
+                  title: 'Collections',
+                  subtitle: 'Tap hop quan theo muc dich de mo chi tiet nhanh',
+                ),
+                const SizedBox(height: 12),
+                if (cafeViewModel.collections.isEmpty)
+                  const _EmptyState(
+                    title: 'Chua co collection nao',
+                    subtitle: 'Ban co the tao va quan ly collection o branch tiep theo.',
+                  )
+                else
+                  ...cafeViewModel.collections.map(
+                    (collection) {
+                      final cafesInCollection = collection.cafeIds
+                          .map(cafeViewModel.getCafeById)
+                          .whereType<Cafe>()
+                          .toList();
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _CollectionCard(
+                          collection: collection,
+                          cafes: cafesInCollection,
+                        ),
+                      );
+                    },
+                  ),
               ],
             ),
           ),
@@ -614,33 +714,55 @@ class _ProfilePreview extends StatelessWidget {
   }
 }
 
-class _ComingSoonPage extends StatelessWidget {
-  const _ComingSoonPage({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
+class _CollectionCard extends StatelessWidget {
+  const _CollectionCard({
+    required this.collection,
+    required this.cafes,
   });
 
-  final String title;
-  final String subtitle;
-  final IconData icon;
+  final CafeCollection collection;
+  final List<Cafe> cafes;
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      bottom: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 120),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 40, color: CafeColors.dark),
-            const SizedBox(height: 18),
-            Text(title, style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 10),
-            Text(subtitle, style: Theme.of(context).textTheme.bodyLarge),
-          ],
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: CafeColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: CafeColors.dark.withValues(alpha: 0.08),
         ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            collection.name,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${cafes.length} quan',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 10),
+          if (cafes.isEmpty)
+            const Text('Collection nay chua co quan nao.')
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: cafes.map((cafe) {
+                return ActionChip(
+                  label: Text(cafe.name),
+                  onPressed: () => _openCafeDetailScreen(context, cafe.id),
+                );
+              }).toList(),
+            ),
+        ],
       ),
     );
   }
