@@ -27,6 +27,12 @@ abstract class CafeRepository {
     Review review, {
     String? imagePath,
   });
+  Future<void> updateReview(String cafeId, Review review);
+  Future<void> deleteReview(String cafeId, String reviewId);
   Future<void> createCollection(String name, List<String> cafeIds);
+  Future<void> renameCollection(String collectionId, String name);
+  Future<void> deleteCollection(String collectionId);
+  Future<void> addCafeToCollection(String collectionId, String cafeId);
+  Future<void> removeCafeFromCollection(String collectionId, String cafeId);
   Future<void> updateUserProfile(UserProfile profile);
 }

@@ -185,6 +185,78 @@ class CafeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateReview({
+    required String cafeId,
+    required Review review,
+    required double rating,
+    required String comment,
+  }) async {
+    await _repository.updateReview(
+      cafeId,
+      review.copyWith(
+        rating: rating,
+        comment: comment.trim(),
+      ),
+    );
+    _cafes = await _repository.getCafes();
+    _reviewHistory = await _repository.getReviewHistory();
+    await _loadNearbyCafes(notify: false);
+    notifyListeners();
+  }
+
+  Future<void> deleteReview({
+    required String cafeId,
+    required String reviewId,
+  }) async {
+    await _repository.deleteReview(cafeId, reviewId);
+    _cafes = await _repository.getCafes();
+    _reviewHistory = await _repository.getReviewHistory();
+    await _loadNearbyCafes(notify: false);
+    notifyListeners();
+  }
+
+  Future<void> updateUserProfile(UserProfile profile) async {
+    await _repository.updateUserProfile(profile);
+    _userProfile = await _repository.getUserProfile();
+    _cafes = await _repository.getCafes();
+    _reviewHistory = await _repository.getReviewHistory();
+    await _loadNearbyCafes(notify: false);
+    notifyListeners();
+  }
+
+  Future<void> createCollection(String name, List<String> cafeIds) async {
+    await _repository.createCollection(name, cafeIds);
+    _collections = await _repository.getCollections();
+    notifyListeners();
+  }
+
+  Future<void> renameCollection(String collectionId, String name) async {
+    await _repository.renameCollection(collectionId, name);
+    _collections = await _repository.getCollections();
+    notifyListeners();
+  }
+
+  Future<void> deleteCollection(String collectionId) async {
+    await _repository.deleteCollection(collectionId);
+    _collections = await _repository.getCollections();
+    notifyListeners();
+  }
+
+  Future<void> addCafeToCollection(String collectionId, String cafeId) async {
+    await _repository.addCafeToCollection(collectionId, cafeId);
+    _collections = await _repository.getCollections();
+    notifyListeners();
+  }
+
+  Future<void> removeCafeFromCollection(
+    String collectionId,
+    String cafeId,
+  ) async {
+    await _repository.removeCafeFromCollection(collectionId, cafeId);
+    _collections = await _repository.getCollections();
+    notifyListeners();
+  }
+
   void _initializeMapCenter() {
     if (_cafes.isEmpty) {
       _mapCenterLatitude = null;
